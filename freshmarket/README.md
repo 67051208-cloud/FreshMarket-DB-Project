@@ -1,4 +1,5 @@
 # 🛒 FreshMarket (POS & Delivery System)
+สามารถเข้าใช้งานได้ตามลิงค์นี้ครับ : https://freshmarket-db.great-site.net/
 ระบบจัดการร้านค้าสด มีทั้งระบบหน้าร้าน (POS) และระบบสั่งซื้อออนไลน์ (Delivery) 
 พัฒนาด้วย HTML, CSS, JavaScript, PHP และเชื่อมต่อกับฐานข้อมูล MySQL แบบ Full System
 
