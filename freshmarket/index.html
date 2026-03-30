@@ -123,6 +123,40 @@
         }
         .interactive-stars i:hover { transform: scale(1.2);
         }
+                 /* ====================================================
+           📱 Responsive Design (รองรับมือถือ, แท็บเล็ต, PC)
+           ==================================================== */
+        @media screen and (max-width: 900px) {
+            /* 1. เลิกจำกัดความสูงหน้าจอ ให้เลื่อนขึ้นลงได้เหมือนหน้าเว็บปกติ */
+            body, #app-screen { height: auto; overflow: auto; }
+            .tab-content { height: auto; overflow: visible; }
+            .tab-content.active { display: flex; flex-direction: column; }
+            
+            /* 2. เปลี่ยน Layout จาก (ซ้าย-ขวา) เป็น (บน-ล่าง) */
+            .split-layout { flex-direction: column; }
+            
+            /* โซนสินค้า (จะอยู่ด้านบน) */
+            .main-area { flex: none; overflow: visible; padding-bottom: 20px; }
+            
+            /* โซนตะกร้า (จะย้ายมาอยู่ด้านล่าง) */
+            .side-area { flex: none; border-left: none; border-top: 4px solid var(--primary); height: auto; }
+            .list-items { max-height: 400px; overflow-y: auto; } /* ไม่ให้ตะกร้ายาวเกินไป */
+
+            /* 3. ปรับแถบเมนู Tab ด้านบนให้เรียงซ้อนกันสวยๆ */
+            .top-nav { flex-wrap: wrap; padding: 10px; }
+            .tab-btn { flex: 1 1 45%; justify-content: center; }
+
+            /* 4. ปรับหน้าต่าง Login ให้พอดีจอมือถือ */
+            .login-box { padding: 25px 15px; width: 95%; }
+        }
+
+        @media screen and (max-width: 480px) {
+            /* 📱 สำหรับหน้าจอมือถือเล็ก (Smartphone) */
+            .product-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); } /* ย่อการ์ดสินค้า */
+            .tab-btn { flex: 1 1 100%; margin-bottom: 5px; } /* เมนูเรียงบรรทัดละปุ่ม */
+            .address-form { grid-template-columns: 1fr; } /* ฟอร์มที่อยู่เหลือ 1 คอลัมน์ (เรียงลงมา) */
+            .full-width { grid-column: auto; }
+        }
     </style>
 </head>
 <body>
@@ -362,7 +396,7 @@
             ],
             Order: [], Order_Process: [], Review: [], Address: [], Delivery: []
         };
-        const API_URL = 'http://localhost/freshmarket/api.php';
+        const API_URL = 'api.php';
         let posCart = []; 
         let deliveryCart = [];
         let activeSystem = 'POS';
