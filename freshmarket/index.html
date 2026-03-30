@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshMarket - Full System DB</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #FDFCF8;
+            --card-bg: #FFFFFF; --primary: #C2A88D; 
+            --primary-hover: #A89075; --primary-light: #F4EFEB; --text-main: #5C4D3C; 
+            --text-muted: #9A8C7E; --border: #EBE5DF; --btn-alt: #8C7A6B;
+        }
+        body { font-family: 'Prompt', sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0;
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        #login-screen { position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .login-box { background: var(--card-bg); padding: 40px; border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(138, 116, 96, 0.08); width: 90%; max-width: 400px; border: 1px solid var(--border); text-align: center;
+        }
+        .login-tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;}
+        .login-tab-btn { flex: 1; padding: 10px 5px; border: none; background: none;
+            color: var(--text-muted); font-family: 'Prompt'; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px; transition: 0.3s;
+        }
+        .login-tab-btn.active { background: var(--primary-light); color: var(--text-main);
+        }
+        .login-form { display: none; flex-direction: column; gap: 15px;
+            text-align: left;}
+        .login-form.active { display: flex;
+        }
+        .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 12px;
+            border: 1px solid var(--border); border-radius: 10px; font-family: 'Prompt'; box-sizing: border-box; background: var(--bg-color); color: var(--text-main); outline: none;
+        }
+        .btn-main { width: 100%; padding: 15px; border: none; border-radius: 10px; background: var(--primary);
+            color: #fff; font-family: 'Prompt'; font-size: 16px; font-weight: 500; cursor: pointer; transition: 0.3s;
+        }
+        .btn-main:hover { background: var(--primary-hover);
+        }
+        
+        #app-screen { display: none;
+            flex-direction: column; height: 100vh; }
+        header { background: var(--card-bg); padding: 15px 30px;
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);
+        }
+        .top-nav { background: var(--card-bg); display: flex; justify-content: center; gap: 15px;
+            padding: 10px 20px; border-bottom: 1px solid var(--border); }
+        .tab-btn { background: none;
+            border: none; padding: 10px 20px; font-family: 'Prompt'; font-size: 15px; color: var(--text-muted); cursor: pointer; border-radius: 8px; transition: 0.3s; display: flex;
+            align-items: center; gap: 8px; }
+        .tab-btn.active { background: var(--primary); color: #fff;
+        }
+        .tab-content { display: none; flex: 1; overflow: hidden; background: var(--bg-color);
+        }
+        .tab-content.active { display: flex;
+        }
+        .split-layout { display: flex; width: 100%; height: 100%;
+        }
+        .main-area { flex: 2; padding: 20px; overflow-y: auto; display: flex; flex-direction: column;
+        }
+        .side-area { flex: 1; background: var(--card-bg); border-left: 1px solid var(--border); display: flex;
+            flex-direction: column; }
+        .search-container { margin-bottom: 15px; position: relative;
+        }
+        .search-input { width: 100%; padding: 12px 15px 12px 40px; border-radius: 25px;
+            border: 1px solid var(--border); font-family: 'Prompt'; font-size: 15px; box-sizing: border-box; outline: none; transition: 0.3s;
+        }
+        .category-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding-bottom: 5px;
+        }
+        .cat-btn { background: var(--card-bg); border: 1px solid var(--border); padding: 8px 16px;
+            border-radius: 25px; font-family: 'Prompt'; font-size: 14px; color: var(--text-muted); cursor: pointer; transition: 0.2s;
+        }
+        .cat-btn.active { background: var(--primary); color: white; border-color: var(--primary);
+        }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;
+        }
+        .product-card { background: var(--card-bg); border: 1px solid var(--border); padding: 20px 10px;
+            border-radius: 16px; text-align: center; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; justify-content: space-between;
+            position: relative;}
+        .product-icon { font-size: 35px; color: var(--primary); margin-bottom: 10px;
+        }
+        .product-name { font-size: 13px; font-weight: 500; line-height: 1.4; margin-bottom: 5px; flex-grow: 1;
+        }
+        .barcode-badge { position: absolute; top: 10px; right: 10px; background: var(--bg-color); color: var(--text-muted);
+            font-size: 10px; padding: 2px 6px; border-radius: 10px; border: 1px solid var(--border);
+        }
+        .cart-header { padding: 20px; border-bottom: 1px solid var(--border); background: var(--card-bg);
+        }
+        .list-items { flex: 1; overflow-y: auto; padding: 20px;
+        }
+        .list-item { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 15px; margin-bottom: 15px;
+            border-bottom: 1px dashed var(--border); }
+        .cart-footer { padding: 20px; background: var(--card-bg);
+            border-top: 1px solid var(--border); }
+        .theme-box { background: var(--card-bg); border: 1px solid var(--border);
+            padding: 20px; border-radius: 16px; margin-bottom: 20px; }
+        .modal { display: none; position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%; background: rgba(92, 77, 60, 0.4); justify-content: center; align-items: center; z-index: 50;
+        }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 90%; max-width: 450px;
+            border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; }
+        
+        .address-form { display: grid;
+            grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .address-form input, .address-form textarea { width: 100%;
+            padding: 8px; border: 1px solid var(--border); border-radius: 8px; font-family: 'Prompt'; font-size: 12px; box-sizing: border-box; background: var(--bg-color);
+        }
+        .full-width { grid-column: 1 / -1;
+        }
+        .history-card { cursor: pointer; transition: 0.2s;
+        }
+        .history-card:hover { border-color: var(--primary); background: var(--primary-light);
+        }
+        
+        /* สไตล์ดาวรีวิว */
+        .interactive-stars i { cursor: pointer;
+            color: #EBE5DF; transition: 0.2s; }
+        .interactive-stars i.active { color: #DDB892;
+        }
+        .interactive-stars i:hover { transform: scale(1.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h2 style="color: var(--primary); margin-top: 0;"><i class="fas fa-database"></i> FreshMarket (DB)</h2>
+            <div class="login-tabs">
+                <button class="login-tab-btn active" onclick="switchLoginTab('merchant')">พนักงาน/ร้านค้า</button>
+                <button class="login-tab-btn" onclick="switchLoginTab('customer')">ลูกค้าทั่วไป</button>
+                <button class="login-tab-btn" onclick="switchLoginTab('register')">สมัครสมาชิกใหม่</button>
+            </div>
+            
+            <div id="form-merchant" class="login-form active">
+                <div class="input-group"><input type="text" id="login-staff-id" placeholder="Users_ID (เช่น EMP-001)" value="EMP-001"></div>
+                <button class="btn-main" onclick="doLogin('merchant')">เข้าสู่ระบบ POS</button>
+            </div>
+            
+            <div id="form-customer" class="login-form">
+                <div class="input-group"><input type="text" id="login-cus-id" placeholder="Users_ID (เช่น USR-101)" value="USR-101"></div>
+                <button class="btn-main" onclick="doLogin('customer')">เข้าสู่ระบบ Delivery</button>
+            </div>
+
+            <div id="form-register" class="login-form">
+                <div class="input-group"><input type="text" id="reg-fname" placeholder="ชื่อจริง (Firstname)"></div>
+                <div class="input-group"><input type="text" id="reg-lname" placeholder="นามสกุล (Lastname)"></div>
+                <div class="input-group"><input type="text" id="reg-phone" placeholder="เบอร์โทรศัพท์ (Phone_number)"></div>
+                <button class="btn-main" onclick="registerUser()" style="background: var(--btn-alt);">ยืนยันการสมัคร</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-screen">
+        <header>
+            <div class="header-left" onclick="logout()" style="cursor: pointer;" title="ออกจากระบบ / กลับหน้าหลัก">
+                <i class="fas fa-store"></i> FreshMarket
+            </div>
+            <div class="header-right" id="header-user-info"></div>
+        </header>
+
+        <div class="top-nav" id="main-nav">
+            <button class="tab-btn active" id="btn-tab-pos" onclick="switchAppTab('tab-pos')">1. POS หน้าร้าน</button>
+            <button class="tab-btn" id="btn-tab-delivery" onclick="switchAppTab('tab-delivery')">2. Delivery</button>
+            <button class="tab-btn" id="btn-tab-history" onclick="switchAppTab('tab-history')">3. ยอดขาย (Order DB)</button>
+            <button class="tab-btn" id="btn-tab-guide" onclick="switchAppTab('tab-guide')">4. รีวิว (Review DB)</button>
+        </div>
+
+        <div id="tab-pos" class="tab-content active">
+            <div class="split-layout">
+                <div class="main-area">
+                    <div class="search-container"><input type="text" class="search-input" placeholder="ค้นหาสินค้า..." onkeyup="handleSearch(event, 'pos')"></div>
+                    <div class="category-filters" id="cat-filters-pos"></div>
+                    <div class="product-grid" id="pos-products"></div>
+                </div>
+                <div class="side-area">
+                    <div class="cart-header"><div>🛒 ตะกร้าหน้าร้าน</div></div>
+                    <div class="list-items" id="pos-cart-items"></div>
+                    <div class="cart-footer">
+                        <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; margin-bottom: 15px;">
+                            <span>รวมสุทธิ</span><span id="pos-total">฿0.00</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button class="btn-main" style="flex: 1; background: #28a745; border: none;" onclick="checkout('POS', 'เงินสด')"><i class="fas fa-money-bill-wave"></i> เงินสด</button>
+                            <button class="btn-main" style="flex: 1; background: #007bff; border: none;" onclick="checkout('POS', 'สแกนจ่าย')"><i class="fas fa-qrcode"></i> สแกนจ่าย</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-delivery" class="tab-content">
+            <div class="split-layout">
+                <div class="main-area">
+                    <div class="search-container"><input type="text" class="search-input" placeholder="ค้นหาสินค้า..." onkeyup="handleSearch(event, 'delivery')"></div>
+                    <div class="category-filters" id="cat-filters-del"></div>
+                    <div class="product-grid" id="delivery-products"></div>
+                </div>
+                <div class="side-area">
+                    <div class="cart-header" style="font-weight: 500;">📦 ตะกร้าจัดส่ง (Delivery)</div>
+                    <div class="list-items" id="delivery-cart-items"></div>
+                    <div class="cart-footer">
+                        <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">ข้อมูลที่อยู่จัดส่ง (Address Table)</div>
+                        <div class="address-form">
+                            <textarea id="addr-desc" class="full-width" rows="2" placeholder="บ้านเลขที่, ซอย, หมู่บ้าน"></textarea>
+                            <input type="text" id="addr-subdistrict" placeholder="ตำบล/แขวง">
+                            <input type="text" id="addr-district" placeholder="อำเภอ/เขต">
+                            <input type="text" id="addr-province" placeholder="จังหวัด">
+                            <input type="text" id="addr-zip" placeholder="รหัสไปรษณีย์">
+                            <input type="text" id="addr-tel" class="full-width" placeholder="เบอร์โทรติดต่อ">
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; color: var(--text-muted);">
+                            <span>ค่าจัดส่ง</span><span>฿30.00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; margin-bottom: 15px;">
+                            <span>รวมสุทธิ</span><span id="delivery-total">฿0.00</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button class="btn-main" style="flex: 1; background: #007bff; border: none;" onclick="checkout('Delivery', 'สแกนจ่าย')"><i class="fas fa-qrcode"></i> สแกนจ่าย</button>
+                            <button class="btn-main" style="flex: 1; background: #f39c12; border: none;" onclick="checkout('Delivery', 'เก็บเงินปลายทาง')"><i class="fas fa-truck-loading"></i> เก็บเงินปลายทาง</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-history" class="tab-content" style="flex-direction: column; padding: 30px; overflow-y: auto; align-items: center;">
+            <div style="width: 100%; max-width: 800px;">
+                <h3 style="color: var(--text-main);">ตาราง Order (คลิกเพื่อดูรายละเอียด)</h3>
+                <div id="bills-list-container"></div>
+            </div>
+        </div>
+
+        <div id="tab-guide" class="tab-content" style="flex-direction: column; padding: 30px; overflow-y: auto; align-items: center;">
+            <div style="width: 100%; max-width: 800px;">
+                <div class="theme-box">
+                    <h3 style="margin-top:0; color: var(--primary);">เขียนรีวิวสินค้า (Review DB)</h3>
+                    <div class="input-group" style="margin-bottom: 10px;">
+                        <select id="review-product-id">
+                            <option value="">-- เลือกสินค้าที่ต้องการรีวิว (Product_ID) --</option>
+                        </select>
+                    </div>
+                    <textarea id="review-text" rows="3" placeholder="ข้อความรีวิว (Review_text)..." style="width: 100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom: 10px;"></textarea>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 14px; color: var(--text-muted);">ให้คะแนน:</span>
+                            <div class="interactive-stars" id="star-rating-container" style="font-size: 20px;">
+                                <i class="fas fa-star active" onclick="setRating(1)"></i>
+                                <i class="fas fa-star active" onclick="setRating(2)"></i>
+                                <i class="fas fa-star active" onclick="setRating(3)"></i>
+                                <i class="fas fa-star active" onclick="setRating(4)"></i>
+                                <i class="fas fa-star active" onclick="setRating(5)"></i>
+                            </div>
+                            <input type="hidden" id="review-rating-val" value="5">
+                        </div>
+                        <button class="btn-main" style="width: auto; padding: 10px 25px;" onclick="submitReview()">บันทึกลง Database</button>
+                    </div>
+                </div>
+                <h3 style="color: var(--text-main);">รีวิวล่าสุด</h3>
+                <div id="reviews-list-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="bill-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="text-align: center; margin: 0;">ออเดอร์สำเร็จ!</h3>
+            <div id="bill-details" style="background: var(--bg-color); padding: 15px; border-radius: 8px; font-size: 13px; margin: 15px 0; border: 1px dashed var(--border);"></div>
+            <button class="btn-main" onclick="closeBill()">ปิดหน้าต่าง</button>
+        </div>
+    </div>
+
+    <div id="order-detail-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 style="text-align: center; margin: 0; color: var(--primary);">รายละเอียดคำสั่งซื้อ</h3>
+            <div id="order-full-details" style="font-size: 13px; margin: 15px 0; line-height: 1.6; color: var(--text-main);"></div>
+            <button class="btn-main" style="background: var(--btn-alt);" onclick="closeOrderDetail()">ปิดหน้าต่าง</button>
+        </div>
+    </div>
+
+    <script>
+        const DB = {
+            User: [
+                { Users_ID: 'EMP-001', Firstname: 'สมหมาย', Lastname: 'ขายดี', Users_name: 'sommai_k' },
+                { Users_ID: 'USR-101', Firstname: 'ลูกค้า', Lastname: 'ประจำ', Users_name: 'customer_1' }
+            ],
+            Category: [
+                { Category_ID: 1, Category_name: 'อาหารสด' }, { Category_ID: 2, Category_name: 'อาหารกึ่งสำเร็จรูป' },
+                { Category_ID: 3, Category_name: 'อาหารแช่แข็ง' }, { Category_ID: 4, Category_name: 'ขนมขบเคี้ยว' },
+                { Category_ID: 5, Category_name: 'เครื่องดื่ม' }, { Category_ID: 6, Category_name: 'ของใช้ในบ้าน' },
+                { Category_ID: 7, Category_name: 'ของใช้ส่วนตัว' }, { Category_ID: 8, Category_name: 'ของใช้เบ็ดเตล็ด' },
+                { Category_ID: 9, Category_name: 'เครื่องเขียน' }, { Category_ID: 10, Category_name: 'ยาสามัญประจำบ้าน' }
+            ],
+            Product: [
+                { Product_ID: 101, Category_ID: 1, Product_name: 'เนื้อหมูสไลด์', Price: 80, Product_image: 'fa-bacon' },
+                { Product_ID: 102, Category_ID: 1, Product_name: 'เนื้อหมูบด', Price: 70, Product_image: 'fa-burger' },
+                { Product_ID: 103, Category_ID: 1, Product_name: 'เนื้ออกไก่ชิ้น', Price: 60, Product_image: 'fa-drumstick-bite' },
+                { Product_ID: 201, Category_ID: 2, Product_name: 'มาม่ารสต้มยำน้ำข้น', Price: 7, Product_image: 'fa-bowl-food' },
+                { Product_ID: 202, Category_ID: 2, Product_name: 'มาม่ารสหมูสับ', Price: 7, Product_image: 'fa-bowl-food' },
+                { Product_ID: 203, Category_ID: 2, Product_name: 'ไวไวหมูสับ', Price: 7, Product_image: 'fa-bowl-food' },
+                { Product_ID: 204, Category_ID: 2, Product_name: 'มาม่าOKรสไข่เค็ม', Price: 15, Product_image: 'fa-bowl-food' },
+                { Product_ID: 301, Category_ID: 3, Product_name: 'ไก่ห่อสาหร่าย CP', Price: 45, Product_image: 'fa-snowflake' },
+                { Product_ID: 302, Category_ID: 3, Product_name: 'นักเก็ตไก่ CP', Price: 45, Product_image: 'fa-snowflake' },
+                { Product_ID: 303, Category_ID: 3, Product_name: 'เฟรนฟรายแช่แข็ง', Price: 50, Product_image: 'fa-snowflake' },
+                { Product_ID: 401, Category_ID: 4, Product_name: 'เลย์รสโนริสาหร่าย 50ก.', Price: 20, Product_image: 'fa-cookie-bite' },
+                { Product_ID: 402, Category_ID: 4, Product_name: 'เลย์รสซาวครีม 50ก.', Price: 20, Product_image: 'fa-cookie-bite' },
+                { Product_ID: 403, Category_ID: 4, Product_name: 'เลย์รสโนริสาหร่าย 180ก.', Price: 52, Product_image: 'fa-cookie-bite' },
+                { Product_ID: 404, Category_ID: 4, Product_name: 'สแน็คแจ็ค', Price: 20, Product_image: 'fa-cookie-bite' },
+                { Product_ID: 405, Category_ID: 4, Product_name: 'ชีโตส', Price: 20, Product_image: 'fa-cookie-bite' },
+                { Product_ID: 406, Category_ID: 4, Product_name: 'ซันไบทส์', Price: 20, Product_image: 'fa-cookie-bite' },
+                { Product_ID: 407, Category_ID: 4, Product_name: 'โอริโอ้', Price: 10, Product_image: 'fa-cookie' },
+                { Product_ID: 408, Category_ID: 4, Product_name: 'เฮอร์ชี่ดาร์คช็อคโกแลต', Price: 15, Product_image: 'fa-candy-cane' },
+                { Product_ID: 409, Category_ID: 4, Product_name: 'คิทแคท', Price: 32, Product_image: 'fa-candy-cane' },
+                { Product_ID: 410, Category_ID: 4, Product_name: 'ไอศกรีมไมโล', Price: 15, Product_image: 'fa-ice-cream' },
+                { Product_ID: 411, Category_ID: 4, Product_name: 'ไอศกรีมวอลล์ท็อปเทน', Price: 20, Product_image: 'fa-ice-cream' },
+                { Product_ID: 501, Category_ID: 5, Product_name: 'Coke Zero', Price: 16, Product_image: 'fa-bottle-droplet' },
+                { Product_ID: 502, Category_ID: 5, Product_name: 'Pepsi', Price: 16, Product_image: 'fa-bottle-droplet' },
+                { Product_ID: 503, Category_ID: 5, Product_name: 'Fanta รสส้ม', Price: 15, Product_image: 'fa-glass-water' },
+                { Product_ID: 504, Category_ID: 5, Product_name: 'Fanta รสองุ่น', Price: 15, Product_image: 'fa-glass-water' },
+                { Product_ID: 505, Category_ID: 5, Product_name: 'Oishi น้ำผึ้งมะนาว', Price: 20, Product_image: 'fa-bottle-water' },
+                { Product_ID: 506, Category_ID: 5, Product_name: 'Oishi ต้นตำรับ', Price: 20, Product_image: 'fa-bottle-water' },
+                { Product_ID: 507, Category_ID: 5, Product_name: 'น้ำมะพร้าว If', Price: 25, Product_image: 'fa-bottle-water' },
+                { Product_ID: 508, Category_ID: 5, Product_name: 'กาแฟลาเต้กระป๋อง', Price: 15, Product_image: 'fa-mug-hot' },
+                { Product_ID: 509, Category_ID: 5, Product_name: 'C-vit เลมอน', Price: 16, Product_image: 'fa-bottle-droplet' },
+                { Product_ID: 601, Category_ID: 6, Product_name: 'ผงซักฟอกบรีส 180ก.', Price: 25, Product_image: 'fa-box-open' },
+                { Product_ID: 602, Category_ID: 6, Product_name: 'ผงซักฟอกบรีส 900ก.', Price: 90, Product_image: 'fa-box-open' },
+                { Product_ID: 603, Category_ID: 6, Product_name: 'ผงซักฟอกเปา 250ก.', Price: 30, Product_image: 'fa-box-open' },
+                { Product_ID: 604, Category_ID: 6, Product_name: 'น้ำยาล้างจานซันไลต์', Price: 20, Product_image: 'fa-pump-soap' },
+                { Product_ID: 605, Category_ID: 6, Product_name: 'น้ำยาล้างจานทีโพล์', Price: 20, Product_image: 'fa-pump-soap' },
+                { Product_ID: 606, Category_ID: 6, Product_name: 'น้ำยาปรับผ้านุ่ม Downy', Price: 20, Product_image: 'fa-bottle-droplet' },
+                { Product_ID: 607, Category_ID: 6, Product_name: 'น้ำยาปรับผ้านุ่ม Fineline', Price: 20, Product_image: 'fa-bottle-droplet' },
+                { Product_ID: 608, Category_ID: 6, Product_name: 'น้ำยาปรับผ้านุ่ม Hygiene', Price: 20, Product_image: 'fa-bottle-droplet' },
+                { Product_ID: 609, Category_ID: 6, Product_name: 'น้ำยาล้างห้องน้ำ', Price: 45, Product_image: 'fa-spray-can' },
+                { Product_ID: 701, Category_ID: 7, Product_name: 'สบู่ Lux', Price: 15, Product_image: 'fa-soap' },
+                { Product_ID: 702, Category_ID: 7, Product_name: 'สบู่ Protect', Price: 15, Product_image: 'fa-soap' },
+                { Product_ID: 703, Category_ID: 7, Product_name: 'สบู่นกแก้ว', Price: 15, Product_image: 'fa-soap' },
+                { Product_ID: 704, Category_ID: 7, Product_name: 'ยาสีฟันดอกบัวคู่', Price: 45, Product_image: 'fa-tooth' },
+                { Product_ID: 705, Category_ID: 7, Product_name: 'ยาสีฟันคอลเกต', Price: 45, Product_image: 'fa-tooth' },
+                { Product_ID: 706, Category_ID: 7, Product_name: 'แชมพู', Price: 35, Product_image: 'fa-pump-soap' },
+                { Product_ID: 707, Category_ID: 7, Product_name: 'ครีมอาบน้ำ', Price: 55, Product_image: 'fa-pump-soap' },
+                { Product_ID: 708, Category_ID: 7, Product_name: 'ผ้าอนามัย Sofy', Price: 40, Product_image: 'fa-box' },
+                { Product_ID: 801, Category_ID: 8, Product_name: 'ถ่านก้อน', Price: 45, Product_image: 'fa-battery-full' },
+                { Product_ID: 802, Category_ID: 8, Product_name: 'ทิชชู่', Price: 15, Product_image: 'fa-toilet-paper' },
+                { Product_ID: 803, Category_ID: 8, Product_name: 'กรรไกร', Price: 25, Product_image: 'fa-scissors' },
+                { Product_ID: 804, Category_ID: 8, Product_name: 'กาวลาเท็กซ์', Price: 15, Product_image: 'fa-fill-drip' },
+                { Product_ID: 805, Category_ID: 8, Product_name: 'เทปใส', Price: 10, Product_image: 'fa-tape' },
+                { Product_ID: 901, Category_ID: 9, Product_name: 'ปากกาน้ำเงิน', Price: 5, Product_image: 'fa-pen' },
+                { Product_ID: 902, Category_ID: 9, Product_name: 'ปากกาแดง', Price: 5, Product_image: 'fa-pen' },
+                { Product_ID: 903, Category_ID: 9, Product_name: 'ปากกาดำ', Price: 5, Product_image: 'fa-pen' },
+                { Product_ID: 904, Category_ID: 9, Product_name: 'ดินสอ', Price: 5, Product_image: 'fa-pencil' },
+                { Product_ID: 905, Category_ID: 9, Product_name: 'สีไม้', Price: 45, Product_image: 'fa-palette' },
+                { Product_ID: 906, Category_ID: 9, Product_name: 'กระดาษ A4', Price: 1, Product_image: 'fa-file' },
+                { Product_ID: 1001, Category_ID: 10, Product_name: 'พาราเซตามอล', Price: 12, Product_image: 'fa-pills' },
+                { Product_ID: 1002, Category_ID: 10, Product_name: 'ยาแก้ท้องเสีย', Price: 15, Product_image: 'fa-capsules' },
+                { Product_ID: 1003, Category_ID: 10, Product_name: 'เบตาดีน', Price: 35, Product_image: 'fa-prescription-bottle-medical' },
+                { Product_ID: 1004, Category_ID: 10, Product_name: 'แอลกอฮอล์ล้างแผล', Price: 15, Product_image: 'fa-bottle-droplet' }
+            ],
+            Order: [], Order_Process: [], Review: [], Address: [], Delivery: []
+        };
+        const API_URL = 'http://localhost/freshmarket/api.php';
+        let posCart = []; 
+        let deliveryCart = [];
+        let activeSystem = 'POS';
+        let currentUser = null;
+        let filterCat = 'all'; 
+        let searchQuery = '';
+
+        function initApp() {
+            let catHtml = `<button class="cat-btn active" onclick="filterProducts('all', this)">ทั้งหมด</button>`;
+            DB.Category.forEach(c => { catHtml += `<button class="cat-btn" onclick="filterProducts(${c.Category_ID}, this)">${c.Category_name}</button>`; });
+            document.getElementById('cat-filters-pos').innerHTML = catHtml; document.getElementById('cat-filters-del').innerHTML = catHtml;
+            let prodOpts = '<option value="">-- เลือกสินค้าที่ต้องการรีวิว (Product_ID) --</option>';
+            DB.Product.forEach(p => { prodOpts += `<option value="${p.Product_ID}">[${p.Product_ID}] ${p.Product_name}</option>`; });
+            document.getElementById('review-product-id').innerHTML = prodOpts;
+        }
+
+        function switchLoginTab(type) {
+            document.querySelectorAll('.login-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.login-form').forEach(form => form.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            document.getElementById(`form-${type}`).classList.add('active');
+        }
+
+        async function registerUser() {
+            const fname = document.getElementById('reg-fname').value;
+            const lname = document.getElementById('reg-lname').value;
+            const phone = document.getElementById('reg-phone').value;
+            
+            if(!fname || !lname || !phone) return alert('กรุณากรอกข้อมูลให้ครบถ้วนครับ');
+            const newId = 'USR-' + (100 + DB.User.filter(u => u.Users_ID.startsWith('USR')).length + 1);
+            const payload = {
+                Users_ID: newId, 
+                Firstname: fname, 
+                Lastname: lname, 
+                Users_name: fname.toLowerCase(),
+                Phone_number: phone
+            };
+
+            try {
+                const response = await fetch(`${API_URL}?action=register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if(response.ok) {
+                    DB.User.push(payload);
+                    alert(`สมัครสมาชิกและบันทึกลง Database สำเร็จ!\nรหัสเข้าใช้งาน: ${newId}`);
+                    switchLoginTab('customer');
+                    document.querySelectorAll('.login-tab-btn')[1].classList.add('active');
+                    document.getElementById('login-cus-id').value = newId;
+                } else {
+                    throw new Error('บันทึกไม่สำเร็จ');
+                }
+            } catch (error) {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ Database');
+            }
+        }
+
+        function doLogin(role) {
+            let inputId = role === 'merchant' ? document.getElementById('login-staff-id').value : document.getElementById('login-cus-id').value;
+            currentUser = DB.User.find(u => u.Users_ID === inputId);
+            if(!currentUser) return alert('ไม่พบ Users_ID นี้ในระบบ Database');
+
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'flex';
+            document.getElementById('header-user-info').innerHTML = `<div class="store-name">${currentUser.Firstname} ${currentUser.Lastname}</div><div>ID: ${currentUser.Users_ID}</div>`;
+            
+            if(role === 'merchant') {
+                document.getElementById('btn-tab-pos').style.display = 'flex';
+                switchAppTab('tab-pos');
+            } else {
+                document.getElementById('btn-tab-pos').style.display = 'none';
+                switchAppTab('tab-delivery');
+            }
+            updateProductDisplay();
+        }
+
+        function logout() {
+            currentUser = null;
+            posCart = [];
+            deliveryCart = [];
+            updateCartUI(); 
+            document.getElementById('app-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.querySelectorAll('.address-form input, .address-form textarea').forEach(el => el.value = '');
+        }
+
+        function switchAppTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById(`btn-${tabId}`).classList.add('active');
+            activeSystem = tabId === 'tab-pos' ? 'POS' : 'Delivery';
+        }
+
+        function handleSearch(event, sys) { searchQuery = event.target.value.toLowerCase().trim(); updateProductDisplay(); }
+        
+        function filterProducts(catId, btnElement) {
+            const container = activeSystem === 'POS' ? document.getElementById('cat-filters-pos') : document.getElementById('cat-filters-del');
+            container.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+            filterCat = catId; updateProductDisplay();
+        }
+
+        function updateProductDisplay() {
+            let filtered = DB.Product.filter(p => {
+                let matchCat = (filterCat === 'all' || p.Category_ID === filterCat);
+                let matchQuery = p.Product_name.toLowerCase().includes(searchQuery);
+                return matchCat && matchQuery;
+            });
+            let html = filtered.map(p => `
+                <div class="product-card" onclick="addToCart(${p.Product_ID})">
+                    <span class="barcode-badge">ID: ${p.Product_ID}</span>
+                    <div class="product-icon"><i class="fas ${p.Product_image}"></i></div>
+                    <div class="product-name">${p.Product_name}</div>
+                    <div style="color: var(--text-muted); font-size: 14px; margin-top: 5px;">฿${p.Price.toFixed(2)}</div>
+                </div>
+            `).join('');
+            let targetDiv = activeSystem === 'POS' ? 'pos-products' : 'delivery-products';
+            document.getElementById(targetDiv).innerHTML = html || `<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted);">ไม่พบสินค้า</div>`;
+        }
+
+        function addToCart(productId) {
+            let cart = activeSystem === 'POS' ? posCart : deliveryCart;
+            let item = cart.find(i => i.Product_ID === productId);
+            if(item) { item.Quantity += 1;
+            } else { 
+                let prod = DB.Product.find(p => p.Product_ID === productId);
+                cart.push({ Product_ID: prod.Product_ID, Product_name: prod.Product_name, Price: prod.Price, Quantity: 1 });
+            }
+            updateCartUI();
+        }
+
+        function changeQty(index, change) {
+            let cart = activeSystem === 'POS' ? posCart : deliveryCart;
+            cart[index].Quantity += change;
+            if(cart[index].Quantity <= 0) {
+                cart.splice(index, 1);
+            }
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            let cart = activeSystem === 'POS' ? posCart : deliveryCart;
+            let cartContainer = document.getElementById(activeSystem === 'POS' ? 'pos-cart-items' : 'delivery-cart-items');
+            let totalContainer = document.getElementById(activeSystem === 'POS' ? 'pos-total' : 'delivery-total');
+            
+            if(!cartContainer) return;
+
+            cartContainer.innerHTML = '';
+            let total = 0;
+            cart.forEach((item, index) => {
+                total += item.Price * item.Quantity;
+                cartContainer.innerHTML += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #ccc;">
+                        <div style="flex: 1; font-size: 14px;">
+                            ${item.Product_name} <br>
+                            <span style="color: gray; font-size: 12px;">฿${item.Price.toFixed(2)} / ชิ้น</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin: 0 10px;">
+                            <button onclick="changeQty(${index}, -1)" style="width: 25px; height: 25px; border: none; background: #ff4d4d; color: white; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;">-</button>
+                            <span style="font-weight: bold; width: 20px; text-align: center; font-size: 14px;">${item.Quantity}</span>
+                            <button onclick="changeQty(${index}, 1)" style="width: 25px; height: 25px; border: none; background: #4CAF50; color: white; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;">+</button>
+                        </div>
+                        <div style="width: 70px; text-align: right; font-weight: bold; color: var(--primary);">
+                            ฿${(item.Price * item.Quantity).toFixed(2)}
+                        </div>
+                    </div>
+                `;
+            });
+
+            if(activeSystem === 'Delivery' && cart.length > 0) {
+                total += 30; // บวกค่าส่ง
+            }
+            totalContainer.innerText = total.toFixed(2);
+        }
+
+        async function checkout(type, paymentMethod) {
+            let cart = type === 'POS' ? posCart : deliveryCart;
+            if(cart.length === 0) return alert('กรุณาเลือกสินค้าก่อนครับ');
+            let totalAmt = cart.reduce((sum, item) => sum + (item.Price * item.Quantity), 0);
+            if(type === 'Delivery') totalAmt += 30;
+
+            const payload = {
+                order: { Users_ID: currentUser.Users_ID, Oder_type: type, Oder_date: new Date().toISOString().slice(0, 10), Users_total: totalAmt },
+                items: cart.map(i => ({ Product_ID: i.Product_ID, Quantity: i.Quantity })),
+                payment: { Payment_method: paymentMethod, Total_amount: totalAmt }
+            };
+
+            if(type === 'Delivery') {
+                const desc = document.getElementById('addr-desc').value;
+                const dist = document.getElementById('addr-district').value;
+                if(!desc || !dist) return alert('กรุณากรอกข้อมูลที่อยู่ (อย่างน้อยบ้านเลขที่ และ อำเภอ) ให้ครบครับ');
+                payload.address = {
+                    Address_description: desc, Subdistrict: document.getElementById('addr-subdistrict').value,
+                    District: dist, Province: document.getElementById('addr-province').value,
+                    Zip_code: document.getElementById('addr-zip').value, Tel: document.getElementById('addr-tel').value
+                };
+            }
+
+            let finalOrderId = '';
+            let isSuccess = false;
+
+            try {
+                const response = await fetch(`${API_URL}?action=checkout`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+                
+                if (response.ok) { 
+                    const result = await response.json();
+                    finalOrderId = result.order_id; 
+                    isSuccess = true;
+
+                    DB.Order.push({ Oder_ID: finalOrderId, Payment_method: paymentMethod, ...payload.order });
+                    payload.items.forEach(item => {
+                        DB.Order_Process.push({ Oder_ID: finalOrderId, Product_ID: item.Product_ID, Quantity: item.Quantity });
+                    });
+
+                    if(type === 'Delivery') {
+                        let newAddrId = DB.Address.length + 1; 
+                        DB.Address.push({ Address_ID: newAddrId, Users_ID: currentUser.Users_ID, ...payload.address });
+                        DB.Delivery.push({ Delivery_ID: DB.Delivery.length + 1, Address_ID: newAddrId, Oder_ID: finalOrderId, Shipping_status: 'Pending' });
+                    }
+                } else { 
+                    throw new Error('เซิร์ฟเวอร์ตอบสนองผิดพลาด'); 
+                }
+            } catch (error) {
+                console.warn(error);
+                finalOrderId = DB.Order.length + 1; // รหัสจำลองกรณีออฟไลน์
+                isSuccess = false;
+                
+                DB.Order.push({ Oder_ID: finalOrderId, Payment_method: paymentMethod, ...payload.order });
+                payload.items.forEach(item => {
+                    DB.Order_Process.push({ Oder_ID: finalOrderId, Product_ID: item.Product_ID, Quantity: item.Quantity });
+                });
+
+                if(type === 'Delivery') {
+                    let mockAddrId = DB.Address.length + 1;
+                    DB.Address.push({ Address_ID: mockAddrId, Users_ID: currentUser.Users_ID, ...payload.address });
+                    DB.Delivery.push({ Delivery_ID: DB.Delivery.length + 1, Address_ID: mockAddrId, Oder_ID: finalOrderId, Shipping_status: 'Pending' });
+                }
+            }
+
+            // ==========================================
+            // สร้างหน้าต่างบิล (แสดงรายการสินค้า + QR Code)
+            // ==========================================
+            let itemsHtml = payload.items.map(i => {
+                let p = DB.Product.find(prod => prod.Product_ID === i.Product_ID);
+                let lineTotal = p ? p.Price * i.Quantity : 0;
+                return `<div style="display:flex; justify-content:space-between; border-bottom:1px dashed #EBE5DF; padding:5px 0;">
+                            <span>${i.Quantity}x ${p ? p.Product_name : 'Unknown'}</span>
+                            <span>฿${lineTotal.toFixed(2)}</span>
+                        </div>`;
+            }).join('');
+
+            let shippingHtml = type === 'Delivery' ? `<div style="display:flex; justify-content:space-between; border-bottom:1px dashed #EBE5DF; padding:5px 0; color: #ff6b6b; font-weight: bold;">
+                        <span><i class="fas fa-motorcycle"></i> ค่าจัดส่ง</span>
+                        <span>฿30.00</span>
+                    </div>` : '';
+
+            let qrCodeHtml = '';
+            if (paymentMethod === 'สแกนจ่าย') {
+                qrCodeHtml = `
+                    <div style="text-align: center; margin-top: 15px; padding: 15px; border: 2px dashed #007bff; border-radius: 8px; background: #f0f8ff;">
+                        <div style="font-weight: bold; color: #007bff; margin-bottom: 5px;"><i class="fas fa-qrcode"></i> กรุณาสแกนคิวอาร์โค้ดเพื่อชำระเงิน</div>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PROMPT_PAY_ORDER_${finalOrderId}" alt="QR Code" style="width: 120px; height: 120px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <div style="font-size: 12px; color: gray; margin-top: 8px;">(สแกนเพื่อจ่ายออเดอร์: ${finalOrderId})</div>
+                    </div>
+                `;
+            } else {
+                let icon = paymentMethod === 'เงินสด' ? 'fa-money-bill-wave' : 'fa-truck-loading';
+                let color = paymentMethod === 'เงินสด' ? '#28a745' : '#f39c12';
+                qrCodeHtml = `
+                    <div style="text-align: center; margin-top: 15px; padding: 15px; border: 1px dashed ${color}; border-radius: 8px; color: ${color};">
+                        <i class="fas ${icon}" style="font-size: 24px; margin-bottom:5px;"></i><br>
+                        <b>วิธีชำระเงิน:</b> ${paymentMethod}
+                    </div>
+                `;
+            }
+
+            let statusMsg = isSuccess 
+                ? `<div style="color:green; margin-bottom:10px; font-weight:bold;"><i class="fas fa-check-circle"></i> บันทึกลงฐานข้อมูลสำเร็จ!</div>` 
+                : `<div style="color:var(--primary); margin-bottom:10px; font-weight:bold;">(โหมดออฟไลน์) สั่งซื้อสำเร็จ</div>`;
+
+            // นำข้อมูลทั้งหมดไปยัดใส่ Popup แจ้งเตือน
+            document.getElementById('bill-details').innerHTML = `
+                ${statusMsg}
+                <b>Oder_ID:</b> ${finalOrderId}<br>
+                <div style="margin: 10px 0; padding: 10px; background: #fff; border: 1px solid var(--border); border-radius: 8px;">
+                    <b style="color:var(--text-muted);">รายการสินค้า:</b><br>
+                    ${itemsHtml}
+                    ${shippingHtml}
+                </div>
+                <div style="text-align:right; font-size:16px;"><b>ยอดต้องชำระ: ฿${payload.order.Users_total.toFixed(2)}</b></div>
+                ${qrCodeHtml}
+            `;
+            document.getElementById('bill-modal').style.display = 'flex';
+
+            // ล้างข้อมูลหน้าจอหลังสั่งซื้อเสร็จ
+            if(type === 'POS') {
+                posCart = []; 
+            } else { 
+                deliveryCart = []; 
+                document.querySelectorAll('.address-form input, .address-form textarea').forEach(el => el.value = ''); 
+            }
+            updateCartUI(); 
+            renderHistoryUI(); 
+        }
+
+        function viewOrderDetails(orderId) {
+            const ord = DB.Order.find(o => o.Oder_ID === orderId);
+            if(!ord) return;
+            
+            let items = DB.Order_Process.filter(op => op.Oder_ID === orderId);
+            let itemHtml = items.map(i => {
+                let p = DB.Product.find(prod => prod.Product_ID === i.Product_ID);
+                let lineTotal = p ? p.Price * i.Quantity : 0;
+                return `<div style="display:flex; justify-content:space-between; border-bottom:1px dashed #EBE5DF; padding:5px 0;">
+                            <span>${i.Quantity}x ${p ? p.Product_name : 'Unknown'}</span>
+                            <span>฿${lineTotal.toFixed(2)}</span>
+                        </div>`;
+            }).join('');
+
+            let shippingHtml = '';
+            if (ord.Oder_type === 'Delivery') {
+                shippingHtml = `<div style="display:flex; justify-content:space-between; border-bottom:1px dashed #EBE5DF; padding:5px 0; color: #ff6b6b; font-weight: bold;">
+                            <span><i class="fas fa-motorcycle"></i> ค่าจัดส่ง (Delivery Fee)</span>
+                            <span>฿30.00</span>
+                        </div>`;
+            }
+
+            let deliveryHtml = '';
+            if(ord.Oder_type === 'Delivery') {
+                let deliv = DB.Delivery.find(d => d.Oder_ID === orderId);
+                if(deliv) {
+                    let addr = DB.Address.find(a => a.Address_ID === deliv.Address_ID);
+                    if(addr) {
+                        deliveryHtml = `<div style="margin-top:15px; padding:15px; background:#FDFCF8; border:1px solid #EBE5DF; border-radius:8px;">
+                            <div style="font-weight:bold; color:var(--primary); margin-bottom:5px;"><i class="fas fa-truck"></i> ข้อมูลการจัดส่ง (Delivery_ID: ${deliv.Delivery_ID})</div>
+                            <b>ที่อยู่:</b> ${addr.Address_description} ต.${addr.Subdistrict} อ.${addr.District} จ.${addr.Province} ${addr.Zip_code} <br>
+                            <b>เบอร์โทร:</b> ${addr.Tel}
+                        </div>`;
+                    }
+                }
+            }
+
+            // ระบบแสดง QR Code
+            let paymentMethodName = ord.Payment_method || (ord.Oder_type === 'POS' ? 'เงินสด' : 'เก็บเงินปลายทาง'); 
+            let qrCodeHtml = '';
+            
+            if (paymentMethodName === 'สแกนจ่าย') {
+                qrCodeHtml = `
+                    <div style="text-align: center; margin-top: 15px; padding: 15px; border: 2px dashed #007bff; border-radius: 8px; background: #f0f8ff;">
+                        <div style="font-weight: bold; color: #007bff; margin-bottom: 5px;"><i class="fas fa-qrcode"></i> กรุณาสแกนเพื่อชำระเงิน</div>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PROMPT_PAY_MOCK_ORDER_${ord.Oder_ID}" alt="QR Code" style="width: 120px; height: 120px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <div style="font-size: 12px; color: gray; margin-top: 8px;">(QR Code สำหรับ Oder: ${ord.Oder_ID})</div>
+                    </div>
+                `;
+            } else {
+                let icon = paymentMethodName === 'เงินสด' ? 'fa-money-bill-wave' : 'fa-truck-loading';
+                let color = paymentMethodName === 'เงินสด' ? '#28a745' : '#f39c12';
+                qrCodeHtml = `
+                    <div style="text-align: center; margin-top: 15px; padding: 15px; border: 1px dashed ${color}; border-radius: 8px; color: ${color};">
+                        <i class="fas ${icon}" style="font-size: 24px; margin-bottom:5px;"></i><br>
+                        <b>วิธีชำระเงิน:</b> ${paymentMethodName}
+                    </div>
+                `;
+            }
+
+            document.getElementById('order-full-details').innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <b>Oder_ID: ${ord.Oder_ID} <span style="font-size:10px; font-weight:normal; background:var(--primary-light); padding:2px 6px; border-radius:4px;">${ord.Oder_type}</span></b>
+                    <span style="color:var(--text-muted);">${ord.Oder_date}</span>
+                </div>
+                <b>Users_ID:</b> ${ord.Users_ID}<br>
+                <div style="margin: 15px 0; padding: 10px; background: #fff; border: 1px solid var(--border); border-radius: 8px;">
+                    <b style="color:var(--text-muted);">รายการสินค้า (Order_Process)</b><br>
+                    ${itemHtml}
+                    ${shippingHtml}
+                </div>
+                <div style="text-align:right; font-size:18px;"><b>ยอดรวมสุทธิ: ฿${ord.Users_total.toFixed(2)}</b></div>
+                
+                ${qrCodeHtml} 
+                
+                ${deliveryHtml}
+            `;
+            document.getElementById('order-detail-modal').style.display = 'flex';
+        }
+
+        function closeBill() { document.getElementById('bill-modal').style.display = 'none'; }
+        function closeOrderDetail() { document.getElementById('order-detail-modal').style.display = 'none'; }
+
+        function renderHistoryUI() {
+            let html = '';
+            [...DB.Order].reverse().forEach(ord => {
+                html += `<div class="theme-box history-card" onclick="viewOrderDetails(${ord.Oder_ID})">
+                    <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                        <span>Oder_ID: ${ord.Oder_ID} <span style="font-size:10px; font-weight:normal; background:var(--primary-light); padding:2px 6px; border-radius:4px;">${ord.Oder_type}</span></span>
+                        <span style="color: var(--primary);">฿${ord.Users_total.toFixed(2)}</span>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:5px;">Users_ID: ${ord.Users_ID} | Date: ${ord.Oder_date}</div>
+                </div>`;
+            });
+            document.getElementById('bills-list-container').innerHTML = html || '<div style="text-align:center; color:var(--text-muted);">ยังไม่มีข้อมูลในตาราง Order</div>';
+        }
+
+        function setRating(val) {
+            document.getElementById('review-rating-val').value = val;
+            const stars = document.getElementById('star-rating-container').children;
+            for(let i=0; i<5; i++) {
+                if(i < val) {
+                    stars[i].classList.remove('far');
+                    stars[i].classList.add('fas');
+                    stars[i].classList.add('active');
+                } else {
+                    stars[i].classList.remove('fas');
+                    stars[i].classList.remove('active');
+                    stars[i].classList.add('far');
+                }
+            }
+        }
+
+       async function submitReview() {
+            const prodId = document.getElementById('review-product-id').value;
+            const text = document.getElementById('review-text').value;
+            const rating = document.getElementById('review-rating-val').value;
+
+            if(!prodId) return alert('กรุณาเลือก Product_ID');
+            if(!text.trim()) return alert('กรุณากรอกข้อความรีวิว');
+
+            const payload = { 
+                Users_ID: currentUser.Users_ID, 
+                Product_ID: parseInt(prodId), 
+                Review_date: new Date().toISOString().slice(0, 10), 
+                Review_text: text, 
+                Review_rating: parseInt(rating) 
+            };
+            try {
+                const response = await fetch(`${API_URL}?action=save_review`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+                if (response.ok) { 
+                    DB.Review.push({ Review_ID: DB.Review.length + 1, ...payload });
+                    alert('บันทึกรีวิวลงฐานข้อมูล MySQL สำเร็จ!'); 
+                } else { 
+                    throw new Error('เซิร์ฟเวอร์ตอบสนองผิดพลาด');
+                }
+            } catch (error) {
+                console.warn(error);
+                DB.Review.push({ Review_ID: DB.Review.length + 1, ...payload });
+                alert('(โหมดออฟไลน์) บันทึกจำลองรีวิวสำเร็จ');
+            }
+
+            document.getElementById('review-product-id').value = '';
+            document.getElementById('review-text').value = '';
+            setRating(5);
+            renderReviews();
+        }
+
+        function renderReviews() {
+            let html = '';
+            [...DB.Review].reverse().forEach(r => {
+                let prod = DB.Product.find(p => p.Product_ID === r.Product_ID);
+                let stars = '<i class="fas fa-star" style="color:#DDB892;"></i>'.repeat(r.Review_rating) + 
+                            '<i class="far fa-star" style="color:#EBE5DF;"></i>'.repeat(5 - r.Review_rating);
+                html += `<div class="theme-box" style="padding:15px; margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:14px; font-weight:bold;">Review_ID: ${r.Review_ID}</span>
+                        <span style="font-size:12px;">${stars}</span>
+                    </div>
+                    <div style="font-size:12px; color:var(--primary); margin-bottom:8px;">[FK] Product_ID: ${r.Product_ID} (${prod ? prod.Product_name : ''})</div>
+                    <div style="font-size:14px; color:var(--text-main);">"${r.Review_text}"</div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:8px;">โดย Users_ID: ${r.Users_ID} | วันที่: ${r.Review_date}</div>
+                </div>`;
+            });
+            document.getElementById('reviews-list-container').innerHTML = html || '<div style="text-align:center; color:var(--text-muted);">ยังไม่มีข้อมูลในตาราง Review</div>';
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
