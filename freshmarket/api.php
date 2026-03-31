@@ -24,7 +24,26 @@ $data = json_decode(file_get_contents("php://input"), true);
 // 1. ระบบสมัครสมาชิกใหม่ (Register)
 // =====================================
 if ($action == 'register') {
-    $uid = $conn->real_escape_string($data['Users_ID']);
+    // -----------------------------------------------------
+        // ระบบรัน Auto-ID ไม่ให้ซ้ำกันแม้จะปิดเบราว์เซอร์
+        // -----------------------------------------------------
+        $sqlLastId = "SELECT Users_ID FROM users ORDER BY Users_ID DESC LIMIT 1";
+        $resultId = $conn->query($sqlLastId);
+
+        if ($resultId->num_rows > 0) {
+            $rowId = $resultId->fetch_assoc();
+            $lastId = $rowId['Users_ID']; // ดึง ID ล่าสุดมา เช่น "user-107"
+            
+            // สกัดเอาเฉพาะตัวเลขออกมา แล้วบวกเพิ่มไปอีก 1
+            $numberOnly = (int) preg_replace('/[^0-9]/', '', $lastId);
+            $nextNumber = $numberOnly + 1;
+            
+            $uid = "user-" . $nextNumber; // ประกอบร่างใหม่เป็น "user-108"
+        } else {
+            // ถ้ายังไม่มีสมาชิกในระบบเลย ให้เริ่มคนแรกที่ 101
+            $uid = "user-101"; 
+        }
+        // -----------------------------------------------------
     $fname = $conn->real_escape_string($data['Firstname']);
     $lname = $conn->real_escape_string($data['Lastname']);
     $uname = $conn->real_escape_string($data['Users_name']);
