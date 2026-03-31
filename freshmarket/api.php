@@ -3,7 +3,6 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 mysqli_report(MYSQLI_REPORT_OFF); 
 
-// โค้ดเดิมของคุณต่อจากตรงนี้...
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
@@ -20,41 +19,54 @@ if ($conn->connect_error) { die(json_encode(["error" => "Connection failed"])); 
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 $data = json_decode(file_get_contents("php://input"), true);
+
 // =====================================
 // 1. ระบบสมัครสมาชิกใหม่ (Register)
 // =====================================
 if ($action == 'register') {
-    // -----------------------------------------------------
-        // ระบบรัน Auto-ID ไม่ให้ซ้ำกันแม้จะปิดเบราว์เซอร์
-        // -----------------------------------------------------
-        $sqlLastId = "SELECT Users_ID FROM users ORDER BY Users_ID DESC LIMIT 1";
-        $resultId = $conn->query($sqlLastId);
-
-        if ($resultId->num_rows > 0) {
-            $rowId = $resultId->fetch_assoc();
-            $lastId = $rowId['Users_ID']; // ดึง ID ล่าสุดมา เช่น "user-107"
-            
-            // สกัดเอาเฉพาะตัวเลขออกมา แล้วบวกเพิ่มไปอีก 1
-            $numberOnly = (int) preg_replace('/[^0-9]/', '', $lastId);
-            $nextNumber = $numberOnly + 1;
-            
-            $uid = "user-" . $nextNumber; // ประกอบร่างใหม่เป็น "user-108"
-        } else {
-            // ถ้ายังไม่มีสมาชิกในระบบเลย ให้เริ่มคนแรกที่ 101
-            $uid = "user-101"; 
-        }
-        // -----------------------------------------------------
+    // รับค่าที่ส่งมาจากหน้าเว็บ
     $fname = $conn->real_escape_string($data['Firstname']);
     $lname = $conn->real_escape_string($data['Lastname']);
     $uname = $conn->real_escape_string($data['Users_name']);
     $phone = $conn->real_escape_string($data['Phone_number']);
 
-    $sqlReg = "INSERT INTO users (Users_ID, Firstname, Lastname, Users_name, Phone_number) 
-               VALUES ('$uid', '$fname', '$lname', '$uname', '$phone')";
-    if ($conn->query($sqlReg) === TRUE) {
-        echo json_encode(["status" => "success"]);
+    // --- STEP 1: เช็กก่อนว่า "ชื่อ-นามสกุล" นี้เคยสมัครไว้แล้วหรือยัง? ---
+    $checkSql = "SELECT Users_ID FROM users WHERE Firstname = '$fname' AND Lastname = '$lname'";
+    $checkResult = $conn->query($checkSql);
+
+    if ($checkResult->num_rows > 0) {
+        // ถ้าเจอว่ามีข้อมูลอยู่แล้ว -> ดึงรหัสเดิมมาโชว์ และหยุดการทำงานทันที
+        $row = $checkResult->fetch_assoc();
+        $existingId = $row['Users_ID'];
+        echo json_encode(["status" => "error", "message" => "คุณมีบัญชีอยู่แล้ว! ไอดีของคุณคือ: " . $existingId]);
+        exit(); // สั่งเบรก ไม่ให้รันโค้ดสมัครสมาชิกต่อ
+    }
+
+    // --- STEP 2: ถ้ารอดจาก STEP 1 มาได้ (เป็นคนใหม่จริง) -> หารหัสล่าสุดเพื่อรันเลขต่อ ---
+    $sqlLastId = "SELECT Users_ID FROM users ORDER BY LENGTH(Users_ID) DESC, Users_ID DESC LIMIT 1";
+    $resultId = $conn->query($sqlLastId);
+
+    if ($resultId->num_rows > 0) {
+        $rowId = $resultId->fetch_assoc();
+        $lastId = $rowId['Users_ID']; // เช่น ได้ค่า "user-102" มา
+        
+        // สกัดเอาเฉพาะตัวเลขออกมา แล้วบวกเพิ่ม 1
+        $numberOnly = (int) preg_replace('/[^0-9]/', '', $lastId);
+        $nextNumber = $numberOnly + 1;
+        $uid = "user-" . $nextNumber; // ประกอบร่างใหม่เป็น "user-103"
     } else {
-        echo json_encode(["status" => "error", "message" => $conn->error]);
+        // ถ้าตาราง users ว่างเปล่า (คนแรกของเว็บ)
+        $uid = "user-101"; 
+    }
+
+    // --- STEP 3: บันทึกคนใหม่ลงฐานข้อมูล ---
+    $sqlReg = "INSERT INTO users (Users_ID, Firstname, Lastname, Users_name, Phone_number)
+               VALUES ('$uid', '$fname', '$lname', '$uname', '$phone')";
+
+    if ($conn->query($sqlReg) === TRUE) {
+        echo json_encode(["status" => "success", "message" => "สมัครสมาชิกสำเร็จ! ไอดีของคุณคือ: " . $uid]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "เกิดข้อผิดพลาด: " . $conn->error]);
     }
 }
 // =====================================
@@ -70,6 +82,7 @@ elseif ($action == 'checkout') {
     $sqlOrder = "INSERT INTO orders (Users_ID, Oder_type, Oder_date, Users_total) VALUES ('$uid', '$type', '$date', $total)";
     if ($conn->query($sqlOrder) === TRUE) {
         $order_id = $conn->insert_id;
+
         // บันทึก Order_Process และ Inventory
         foreach ($data['items'] as $item) {
             $pid = $item['Product_ID'];
@@ -77,6 +90,7 @@ elseif ($action == 'checkout') {
             
             $sqlItems = "INSERT INTO order_process (Oder_ID, Product_ID, Quantity) VALUES ($order_id, $pid, $qty)";
             $conn->query($sqlItems);
+
             // จำลองการตัดสต๊อกลงตาราง Inventory (บันทึกเป็นยอดติดลบ และสถานะ Sold)
             $sqlInv = "INSERT INTO inventory (Product_ID, Inventory_qty, Inventory_status, Inventory_DateReceived) 
                        VALUES ($pid, -$qty, 'Sold', '$date')";
@@ -97,6 +111,7 @@ elseif ($action == 'checkout') {
             $prov = $conn->real_escape_string($data['address']['Province']);
             $zip = $conn->real_escape_string($data['address']['Zip_code']);
             $tel = $conn->real_escape_string($data['address']['Tel']);
+
             $sqlAddr = "INSERT INTO address (Users_ID, Address_description, Subdistrict, District, Province, Zip_code, Tel) 
                         VALUES ('$uid', '$desc', '$subd', '$dist', '$prov', '$zip', '$tel')";
             $conn->query($sqlAddr);
@@ -125,6 +140,7 @@ elseif ($action == 'save_review') {
 
     $sql = "INSERT INTO review (Users_ID, Product_ID, Review_date, Review_text, Review_rating) 
             VALUES ('$uid', $pid, '$date', '$text', $rating)";
+
     if ($conn->query($sql) === TRUE) {
         echo json_encode(["status" => "success"]);
     } else {
