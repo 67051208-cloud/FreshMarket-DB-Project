@@ -146,6 +146,23 @@ elseif ($action == 'save_review') {
     } else {
         echo json_encode(["status" => "error", "message" => $conn->error]);
     }
+}
+// =====================================
+// 4. ระบบเข้าสู่ระบบ (Login)
+// =====================================
+elseif ($action == 'login') {
+    $uid = $conn->real_escape_string($data['Users_ID']);
+    $sql = "SELECT * FROM users WHERE Users_ID = '$uid'";
+    $result = $conn->query($sql);
+
+    if ($result->num_rows > 0) {
+        // ถ้าเจอผู้ใช้นี้ในระบบ
+        $user = $result->fetch_assoc();
+        echo json_encode(["status" => "success", "user" => $user]);
+    } else {
+        // ถ้าไม่เจอ
+        echo json_encode(["status" => "error", "message" => "ไม่พบ Users_ID นี้ในระบบฐานข้อมูล หรือคุณอาจจะกรอกไอดีผิดครับ"]);
+    }
 } 
 else {
     echo json_encode(["status" => "error", "message" => "Invalid Action"]);
