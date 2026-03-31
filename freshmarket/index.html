@@ -595,6 +595,9 @@
             totalContainer.innerText = total.toFixed(2);
         }
 
+        // ==========================================
+        // อัปเดตฟังก์ชันสั่งซื้อสินค้า (Checkout) ให้ดัก Error ได้
+        // ==========================================
         async function checkout(type, paymentMethod) {
             let cart = type === 'POS' ? posCart : deliveryCart;
             if(cart.length === 0) return alert('กรุณาเลือกสินค้าก่อนครับ');
@@ -630,37 +633,34 @@
                 
                 if (response.ok) { 
                     const result = await response.json();
-                    finalOrderId = result.order_id; 
-                    isSuccess = true;
+                    
+                    // --- จุดที่อัปเดต: เช็กว่า PHP ตอบ success จริงๆ ใช่ไหม ---
+                    if (result.status === 'success') {
+                        finalOrderId = result.order_id; 
+                        isSuccess = true;
 
-                    DB.Order.push({ Oder_ID: finalOrderId, Payment_method: paymentMethod, ...payload.order });
-                    payload.items.forEach(item => {
-                        DB.Order_Process.push({ Oder_ID: finalOrderId, Product_ID: item.Product_ID, Quantity: item.Quantity });
-                    });
+                        DB.Order.push({ Oder_ID: finalOrderId, Payment_method: paymentMethod, ...payload.order });
+                        payload.items.forEach(item => {
+                            DB.Order_Process.push({ Oder_ID: finalOrderId, Product_ID: item.Product_ID, Quantity: item.Quantity });
+                        });
 
-                    if(type === 'Delivery') {
-                        let newAddrId = DB.Address.length + 1; 
-                        DB.Address.push({ Address_ID: newAddrId, Users_ID: currentUser.Users_ID, ...payload.address });
-                        DB.Delivery.push({ Delivery_ID: DB.Delivery.length + 1, Address_ID: newAddrId, Oder_ID: finalOrderId, Shipping_status: 'Pending' });
+                        if(type === 'Delivery') {
+                            let newAddrId = DB.Address.length + 1; 
+                            DB.Address.push({ Address_ID: newAddrId, Users_ID: currentUser.Users_ID, ...payload.address });
+                            DB.Delivery.push({ Delivery_ID: DB.Delivery.length + 1, Address_ID: newAddrId, Oder_ID: finalOrderId, Shipping_status: 'Pending' });
+                        }
+                    } else {
+                        // ถ้า PHP เตะข้อมูลทิ้ง (เช่น ไม่มีชื่อผู้ใช้นี้ในระบบ) ให้โยน Error
+                        throw new Error(result.message);
                     }
                 } else { 
                     throw new Error('เซิร์ฟเวอร์ตอบสนองผิดพลาด'); 
                 }
             } catch (error) {
-                console.warn(error);
-                finalOrderId = DB.Order.length + 1; // รหัสจำลองกรณีออฟไลน์
-                isSuccess = false;
-                
-                DB.Order.push({ Oder_ID: finalOrderId, Payment_method: paymentMethod, ...payload.order });
-                payload.items.forEach(item => {
-                    DB.Order_Process.push({ Oder_ID: finalOrderId, Product_ID: item.Product_ID, Quantity: item.Quantity });
-                });
-
-                if(type === 'Delivery') {
-                    let mockAddrId = DB.Address.length + 1;
-                    DB.Address.push({ Address_ID: mockAddrId, Users_ID: currentUser.Users_ID, ...payload.address });
-                    DB.Delivery.push({ Delivery_ID: DB.Delivery.length + 1, Address_ID: mockAddrId, Oder_ID: finalOrderId, Shipping_status: 'Pending' });
-                }
+                // เด้งข้อความแจ้งเตือนสีแดงๆ ให้เรารู้ว่าพังเพราะอะไร
+                console.warn("ตรวจสอบ Error:", error);
+                alert("เซิร์ฟเวอร์ปฏิเสธการสั่งซื้อ (อาจเป็นเพราะไอดีนี้ไม่มีในฐานข้อมูล): \n" + error.message);
+                return; // หยุดการทำงาน ไม่ต้องเปิดบิลสั่งซื้อ
             }
 
             // ==========================================
@@ -700,9 +700,7 @@
                 `;
             }
 
-            let statusMsg = isSuccess 
-                ? `<div style="color:green; margin-bottom:10px; font-weight:bold;"><i class="fas fa-check-circle"></i> บันทึกลงฐานข้อมูลสำเร็จ!</div>` 
-                : `<div style="color:var(--primary); margin-bottom:10px; font-weight:bold;">(โหมดออฟไลน์) สั่งซื้อสำเร็จ</div>`;
+            let statusMsg = `<div style="color:green; margin-bottom:10px; font-weight:bold;"><i class="fas fa-check-circle"></i> บันทึกลงฐานข้อมูลสำเร็จ!</div>`;
 
             document.getElementById('bill-details').innerHTML = `
                 ${statusMsg}
