@@ -127,34 +127,27 @@
            📱 Responsive Design (รองรับมือถือ, แท็บเล็ต, PC)
            ==================================================== */
         @media screen and (max-width: 900px) {
-            /* 1. เลิกจำกัดความสูงหน้าจอ ให้เลื่อนขึ้นลงได้เหมือนหน้าเว็บปกติ */
             body, #app-screen { height: auto; overflow: auto; }
             .tab-content { height: auto; overflow: visible; }
             .tab-content.active { display: flex; flex-direction: column; }
             
-            /* 2. เปลี่ยน Layout จาก (ซ้าย-ขวา) เป็น (บน-ล่าง) */
             .split-layout { flex-direction: column; }
             
-            /* โซนสินค้า (จะอยู่ด้านบน) */
             .main-area { flex: none; overflow: visible; padding-bottom: 20px; }
             
-            /* โซนตะกร้า (จะย้ายมาอยู่ด้านล่าง) */
             .side-area { flex: none; border-left: none; border-top: 4px solid var(--primary); height: auto; }
-            .list-items { max-height: 400px; overflow-y: auto; } /* ไม่ให้ตะกร้ายาวเกินไป */
+            .list-items { max-height: 400px; overflow-y: auto; } 
 
-            /* 3. ปรับแถบเมนู Tab ด้านบนให้เรียงซ้อนกันสวยๆ */
             .top-nav { flex-wrap: wrap; padding: 10px; }
             .tab-btn { flex: 1 1 45%; justify-content: center; }
 
-            /* 4. ปรับหน้าต่าง Login ให้พอดีจอมือถือ */
             .login-box { padding: 25px 15px; width: 95%; }
         }
 
         @media screen and (max-width: 480px) {
-            /* 📱 สำหรับหน้าจอมือถือเล็ก (Smartphone) */
-            .product-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); } /* ย่อการ์ดสินค้า */
-            .tab-btn { flex: 1 1 100%; margin-bottom: 5px; } /* เมนูเรียงบรรทัดละปุ่ม */
-            .address-form { grid-template-columns: 1fr; } /* ฟอร์มที่อยู่เหลือ 1 คอลัมน์ (เรียงลงมา) */
+            .product-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); } 
+            .tab-btn { flex: 1 1 100%; margin-bottom: 5px; } 
+            .address-form { grid-template-columns: 1fr; } 
             .full-width { grid-column: auto; }
         }
     </style>
@@ -176,7 +169,7 @@
             </div>
             
             <div id="form-customer" class="login-form">
-                <div class="input-group"><input type="text" id="login-cus-id" placeholder="Users_ID (เช่น USR-101)" value="USR-101"></div>
+                <div class="input-group"><input type="text" id="login-cus-id" placeholder="Users_ID (เช่น user-101)" value="user-101"></div>
                 <button class="btn-main" onclick="doLogin('customer')">เข้าสู่ระบบ Delivery</button>
             </div>
 
@@ -320,8 +313,7 @@
     <script>
         const DB = {
             User: [
-                { Users_ID: 'EMP-001', Firstname: 'สมหมาย', Lastname: 'ขายดี', Users_name: 'sommai_k' },
-                { Users_ID: 'USR-101', Firstname: 'ลูกค้า', Lastname: 'ประจำ', Users_name: 'customer_1' }
+                { Users_ID: 'EMP-001', Firstname: 'สมหมาย', Lastname: 'ขายดี', Users_name: 'sommai_k' }
             ],
             Category: [
                 { Category_ID: 1, Category_name: 'อาหารสด' }, { Category_ID: 2, Category_name: 'อาหารกึ่งสำเร็จรูป' },
@@ -420,17 +412,22 @@
             document.getElementById(`form-${type}`).classList.add('active');
         }
 
+        // ==========================================
+        // อัปเดตฟังก์ชันสมัครสมาชิกให้ฉลาดขึ้น
+        // ==========================================
         async function registerUser() {
             const fname = document.getElementById('reg-fname').value;
             const lname = document.getElementById('reg-lname').value;
             const phone = document.getElementById('reg-phone').value;
-            
-            if(!fname || !lname || !phone) return alert('กรุณากรอกข้อมูลให้ครบถ้วนครับ');
-            const newId = 'USR-' + (100 + DB.User.filter(u => u.Users_ID.startsWith('USR')).length + 1);
+
+            if(!fname || !lname || !phone) {
+                return alert('กรุณากรอกข้อมูลให้ครบถ้วนครับ');
+            }
+
+            // ส่งข้อมูลให้ PHP จัดการเรื่อง ID ให้
             const payload = {
-                Users_ID: newId, 
-                Firstname: fname, 
-                Lastname: lname, 
+                Firstname: fname,
+                Lastname: lname,
                 Users_name: fname.toLowerCase(),
                 Phone_number: phone
             };
@@ -441,24 +438,48 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                if(response.ok) {
-                    DB.User.push(payload);
-                    alert(`สมัครสมาชิกและบันทึกลง Database สำเร็จ!\nรหัสเข้าใช้งาน: ${newId}`);
+
+                // แปลงข้อความที่ตอบกลับมาจาก PHP
+                const data = await response.json(); 
+
+                if (data.status === 'success') {
+                    alert(data.message); // โชว์ข้อความสำเร็จ + ได้รหัสอะไร
+                    
+                    // แอบดึง ID ที่ PHP ส่งมา เพื่อเอามาใส่ในระบบจำลอง (จะได้ล็อกอินได้เลยไม่ต้องรีเฟรช)
+                    let newId = data.message.split(': ')[1] || 'USR-NEW';
+                    DB.User.push({ 
+                        Users_ID: newId, 
+                        Firstname: fname, 
+                        Lastname: lname, 
+                        Users_name: fname.toLowerCase(),
+                        Phone_number: phone
+                    });
+                    
+                    // สลับไปหน้าลูกค้า และกรอก ID เข้าสู่ระบบให้เลย
                     switchLoginTab('customer');
                     document.querySelectorAll('.login-tab-btn')[1].classList.add('active');
                     document.getElementById('login-cus-id').value = newId;
+                    
+                    // ล้างข้อมูลฟอร์มสมัคร
+                    document.getElementById('reg-fname').value = '';
+                    document.getElementById('reg-lname').value = '';
+                    document.getElementById('reg-phone').value = '';
+
                 } else {
-                    throw new Error('บันทึกไม่สำเร็จ');
+                    // ถ้าชื่อซ้ำ หรือมี Error ให้โชว์ข้อความจาก PHP แจ้งเตือนผู้ใช้
+                    alert(data.message); 
                 }
+
             } catch (error) {
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ Database');
+                console.error("Error:", error);
+                alert("เซิร์ฟเวอร์ตอบกลับมาผิดพลาด (ลองเช็กไฟล์ api.php อีกครั้งครับ)");
             }
         }
 
         function doLogin(role) {
             let inputId = role === 'merchant' ? document.getElementById('login-staff-id').value : document.getElementById('login-cus-id').value;
             currentUser = DB.User.find(u => u.Users_ID === inputId);
-            if(!currentUser) return alert('ไม่พบ Users_ID นี้ในระบบ Database');
+            if(!currentUser) return alert('ไม่พบ Users_ID นี้ในระบบ หรือคุณอาจต้องรีเฟรชหน้าเว็บหากเพิ่งสมัครสมาชิกไปเมื่อกี้ครับ');
 
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-screen').style.display = 'flex';
@@ -683,7 +704,6 @@
                 ? `<div style="color:green; margin-bottom:10px; font-weight:bold;"><i class="fas fa-check-circle"></i> บันทึกลงฐานข้อมูลสำเร็จ!</div>` 
                 : `<div style="color:var(--primary); margin-bottom:10px; font-weight:bold;">(โหมดออฟไลน์) สั่งซื้อสำเร็จ</div>`;
 
-            // นำข้อมูลทั้งหมดไปยัดใส่ Popup แจ้งเตือน
             document.getElementById('bill-details').innerHTML = `
                 ${statusMsg}
                 <b>Oder_ID:</b> ${finalOrderId}<br>
@@ -697,7 +717,6 @@
             `;
             document.getElementById('bill-modal').style.display = 'flex';
 
-            // ล้างข้อมูลหน้าจอหลังสั่งซื้อเสร็จ
             if(type === 'POS') {
                 posCart = []; 
             } else { 
@@ -745,7 +764,6 @@
                 }
             }
 
-            // ระบบแสดง QR Code
             let paymentMethodName = ord.Payment_method || (ord.Oder_type === 'POS' ? 'เงินสด' : 'เก็บเงินปลายทาง'); 
             let qrCodeHtml = '';
             
